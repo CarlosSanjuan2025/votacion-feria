@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Código QR de votación</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script></head>
+<body>
+<header><h1 id="t"></h1><p>Escanea el QR para votar</p></header>
+<main style="text-align:center">
+<div class="qrbox"><div id="qr"></div></div>
+<p class="noprint"><input type="text" id="u"></p>
+<p class="noprint"><button id="g">Generar</button> <button id="d">Descargar PNG</button> <button onclick="print()">Imprimir</button></p>
+</main>
+<script src="config.js"></script>
+<script>
+document.getElementById("t").textContent = window.CONFIG.TITULO;
+const u = document.getElementById("u");
+u.value = location.href.replace(/qr\.html.*$/, "index.html");
+function gen() {
+const q = document.getElementById("qr"); q.innerHTML = "";
+new QRCode(q, { text: u.value, width: 280, height: 280, correctLevel: QRCode.CorrectLevel.M });
+}
+document.getElementById("g").onclick = gen;
+document.getElementById("d").onclick = () => {
+const c = document.querySelector("#qr canvas"); if (!c) return;
+const a = document.createElement("a"); a.download = "qr-votacion.png"; a.href = c.toDataURL("image/png"); a.click();
+};
+gen();
+</script></body></html>
