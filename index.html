@@ -20,7 +20,7 @@ function yaVoto() {
 m.innerHTML = '<div class="msg"><h2>¡Gracias por votar! 🎉</h2><p>Tu voto ya quedó registrado en este dispositivo.</p></div>';
 document.getElementById("bar").hidden = true;
 }
-if (localStorage.getItem("voto_ok")) yaVoto();
+rondaOk().then(ya => { if (ya) yaVoto();
 else {
 C.PROYECTOS.forEach(p => {
 const l = document.createElement("label");
@@ -41,8 +41,8 @@ m.appendChild(l);
 b.onclick = async () => {
 if (!sel) return;
 b.disabled = true; b.textContent = "Enviando…";
-try { await enviarVoto(sel); localStorage.setItem("voto_ok", sel); yaVoto(); }
+try { await enviarVoto(sel); localStorage.setItem("voto_ok", sel); localStorage.setItem("voto_ronda", await rondaActual()); yaVoto(); }
 catch (e) { alert("No se pudo enviar. Revisa tu internet e intenta otra vez."); b.disabled = false; b.textContent = "Votar"; }
 };
-}
+}});
 </script></body></html>
