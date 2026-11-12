@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Resultados en vivo</title>
+<link rel="stylesheet" href="style.css"></head>
+<body>
+<div id="demo" class="demo" hidden>MODO DEMO: solo se ven los votos de este navegador</div>
+<header><h1>Resultados en vivo 🏆</h1><p id="i"></p><p id="tot" class="sub"></p></header>
+<main id="m"></main>
+<script src="config.js"></script><script src="common.js"></script>
+<script>
+document.getElementById("i").textContent = C.TITULO + " · " + C.INSTITUCION;
+if (DEMO) document.getElementById("demo").hidden = false;
+async function pintar() {
+try {
+const c = await leerVotos();
+const total = Object.values(c).reduce((a, b) => a + b, 0);
+const max = Math.max(...Object.values(c));
+document.getElementById("tot").textContent = "Total de votos: " + total + " · se actualiza cada 5 s";
+const lista = [...C.PROYECTOS].sort((a, b) => c[b.id] - c[a.id]);
+const m = document.getElementById("m"); m.innerHTML = "";
+lista.forEach(p => {
+const lider = max > 0 && c[p.id] === max;
+const pct = total ? Math.round(c[p.id] * 100 / total) : 0;
+const d = document.createElement("div");
+d.className = "row" + (lider ? " top" : "");
+d.innerHTML = '<div class="h"><span class="n"><span class="ft"></span><span class="tx"></span></span><span class="big"></span></div><div class="sub"></div><div class="track"><div class="fill"></div></div>';
+d.querySelector(".tx").textContent = (lider ? "👑 " : "") + p.nombre;
+d.querySelector(".ft").replaceWith(crearFoto(p, "th"));
+d.querySelector(".big").textContent = c[p.id];
+d.querySelector(".sub").textContent = "Líder: " + p.lider + " · " + pct + "%";
+m.appendChild(d);
+requestAnimationFrame(() => d.querySelector(".fill").style.width = (max ? c[p.id] * 100 / max : 0) + "%");
+});
+} catch (e) { document.getElementById("tot").textContent = "Error leyendo votos: " + e.message; }
+}
+pintar(); setInterval(pintar, 5000);
+</script></body></html>
