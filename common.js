@@ -65,3 +65,21 @@ function ampliar(src) {
   o.onclick = () => o.remove();
   document.body.appendChild(o);
 }
+
+async function rondaActual() {
+  if (DEMO) return "0";
+  try {
+    const r = await fetch(BASE + "/ronda.json", { cache: "no-store" });
+    const v = await r.json();
+    return v == null ? "0" : String(v);
+  } catch (e) { return "0"; }
+}
+
+async function rondaOk() {
+  const r = await rondaActual();
+  if (localStorage.getItem("voto_ok")) {
+    if ((localStorage.getItem("voto_ronda") || "0") === r) return true;
+    localStorage.removeItem("voto_ok");
+  }
+  return false;
+}
