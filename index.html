@@ -30,7 +30,7 @@ const f = crearFoto(p, "ph");
 f.onclick = e => { if (f.tagName === "IMG") { e.preventDefault(); ampliar(p.foto); } };
 l.insertBefore(f, l.children[1]);
 l.querySelector("b").textContent = p.nombre;
-l.querySelector("span").textContent = "Líder: " + p.lider;
+
 l.querySelector("input").onchange = () => {
 sel = p.id; b.disabled = false;
 document.querySelectorAll(".card").forEach(c => c.classList.remove("sel"));
