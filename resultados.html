@@ -28,7 +28,7 @@ d.innerHTML = '<div class="h"><span class="n"><span class="ft"></span><span clas
 d.querySelector(".tx").textContent = (lider ? "👑 " : "") + p.nombre;
 d.querySelector(".ft").replaceWith(crearFoto(p, "th"));
 d.querySelector(".big").textContent = c[p.id];
-d.querySelector(".sub").textContent = "Líder: " + p.lider + " · " + pct + "%";
+d.querySelector(".sub").textContent = pct + "% de los votos";
 m.appendChild(d);
 requestAnimationFrame(() => d.querySelector(".fill").style.width = (max ? c[p.id] * 100 / max : 0) + "%");
 });
