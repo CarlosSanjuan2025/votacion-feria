@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel de administrador</title>
+<link rel="stylesheet" href="style.css"></head>
+<body>
+<div id="demo" class="demo" hidden>MODO DEMO: sin Firebase configurado</div>
+<header><h1>Panel de administrador 🔒</h1><p id="i"></p></header>
+<main>
+<div id="login" class="row">
+<p>Ingresa el PIN de administrador</p>
+<input type="password" id="pin" autocomplete="off" style="width:100%;padding:12px;border-radius:10px;border:1px solid #2f4673;background:#0b1424;color:#eef3fb;font-size:1rem">
+<p id="err" class="sub" style="color:#ff8a8a"></p>
+<button id="go">Entrar</button>
+</div>
+<div id="panel" hidden>
+<p id="tot" class="sub"></p>
+<div id="lista"></div>
+<p id="msg" class="sub"></p>
+<p style="text-align:center"><button id="rst" style="background:#ff6b6b">Reiniciar votación (borra todos los votos)</button> <button id="out" style="background:#9fb0cc">Salir</button></p>
+</div>
+</main>
+<script src="config.js"></script><script src="common.js"></script>
+<script>
+document.getElementById("i").textContent = C.TITULO;
+if (DEMO) document.getElementById("demo").hidden = false;
+const $ = id => document.getElementById(id);
+let timer = null;
+
+function url(ruta, pin) { return BASE + ruta + ".json"; }
+function kReset(pin) { return BASE + "/reset/" + encodeURIComponent(pin) + ".json"; }
+
+async function probarPin(pin) {
+if (DEMO) return true;
+try {
+const r = await fetch(kReset(pin), { method: "PUT", body: "false" });
+return r.ok;
+} catch (e) { return false; }
+}
+
+async function pintar() {
+try {
+const c = await leerVotos();
+const total = Object.values(c).reduce((a, b) => a + b, 0);
+const max = Math.max(...Object.values(c));
+$("tot").textContent = "Total de votos: " + total + " · se actualiza cada 5 s";
+const lista = [...C.PROYECTOS].sort((a, b) => c[b.id] - c[a.id]);
+$("lista").innerHTML = "";
+lista.forEach(p => {
+const top = max > 0 && c[p.id] === max;
+const pct = total ? Math.round(c[p.id] * 100 / total) : 0;
+const d = document.createElement("div");
+d.className = "row" + (top ? " top" : "");
+d.innerHTML = '<div class="h"><span class="n"><span class="ft"></span><span class="tx"></span></span><span class="big"></span></div><div class="sub"></div><div class="track"><div class="fill"></div></div>';
+d.querySelector(".tx").textContent = (top ? "👑 " : "") + p.nombre;
+d.querySelector(".ft").replaceWith(crearFoto(p, "th"));
+d.querySelector(".big").textContent = c[p.id];
+d.querySelector(".sub").textContent = pct + "% de los votos";
+$("lista").appendChild(d);
+requestAnimationFrame(() => d.querySelector(".fill").style.width = (max ? c[p.id] * 100 / max : 0) + "%");
+});
+} catch (e) { $("tot").textContent = "Error leyendo votos: " + e.message; }
+}
+
+function mostrarPanel() {
+$("login").hidden = true; $("panel").hidden = false;
+pintar(); timer = setInterval(pintar, 5000);
+}
+
+async function entrar() {
+const pin = $("pin").value.trim();
+if (!pin) return;
+$("err").textContent = "Verificando…";
+if (await probarPin(pin)) { sessionStorage.setItem("pin", pin); $("err").textContent = ""; mostrarPanel(); }
+else { $("err").textContent = "PIN incorrecto o administrador sin configurar."; }
+}
+
+async function reiniciar() {
+if (!confirm("¿Seguro? Se borrarán TODOS los votos y no se puede deshacer.")) return;
+const pin = sessionStorage.getItem("pin") || "";
+$("msg").textContent = "Reiniciando…";
+if (DEMO) { localStorage.removeItem("votos_demo"); $("msg").textContent = "Votación reiniciada."; pintar(); return; }
+try {
+let r = await fetch(kReset(pin), { method: "PUT", body: "true" });
+if (!r.ok) throw new Error("PIN no válido");
+r = await fetch(BASE + "/votos.json", { method: "DELETE" });
+if (!r.ok) throw new Error("No se pudieron borrar los votos (" + r.status + ")");
+r = await fetch(BASE + "/ronda.json", { method: "PUT", body: String(Date.now()) });
+if (!r.ok) throw new Error("No se pudo actualizar la ronda (" + r.status + ")");
+$("msg").textContent = "Votación reiniciada. Todos pueden votar de nuevo.";
+} catch (e) {
+$("msg").textContent = "Error: " + e.message;
+} finally {
+try { await fetch(kReset(pin), { method: "PUT", body: "false" }); } catch (e) {}
+}
+pintar();
+}
+
+$("go").onclick = entrar;
+$("pin").onkeydown = e => { if (e.key === "Enter") entrar(); };
+$("rst").onclick = reiniciar;
+$("out").onclick = () => { sessionStorage.removeItem("pin"); clearInterval(timer); $("panel").hidden = true; $("login").hidden = false; $("pin").value = ""; };
+if (sessionStorage.getItem("pin")) mostrarPanel();
+</script></body></html>
