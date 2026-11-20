@@ -12,6 +12,7 @@ window.CONFIG = {
     { id: 4, nombre: "Parlanchicanecas: una estrategia didáctica e interactiva para fortalecer la separación de residuos en estudiantes de 3.º grado", lider: "Karla", foto: "fotos/4.jpg" },
     { id: 5, nombre: "Sistema de control de entrega de almuerzos mediante huella digital", lider: "Ricardo", foto: "fotos/5.jpg" },
     { id: 6, nombre: "Prototipo de fuente de agua fría para la IETI Nuestra Señora del Rosario de Pitalito", lider: "Marleidis", foto: "fotos/6.jpg" },
-    { id: 7, nombre: "Grifería automática", lider: "Joeth", foto: "fotos/7.jpg" }
+    { id: 7, nombre: "Grifería automática", lider: "Joeth", foto: "fotos/7.jpg" },
+    { id: 8, nombre: "Sistema de control de asistencia estudiantil mediante tarjetas con código QR", lider: "Esteban Noriega", foto: "fotos/8.jpg" }
     ]
 };
