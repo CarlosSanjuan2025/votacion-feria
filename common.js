@@ -83,3 +83,20 @@ async function rondaOk() {
   }
   return false;
 }
+
+
+(function () {
+  var p = new URLSearchParams(location.search).get("p");
+  if (!/^[1-7]$/.test(p || "")) return;
+  var m = document.getElementById("m");
+  if (!m) return;
+  var o = new MutationObserver(function () {
+    var r = m.querySelector('input[name="p"][value="' + p + '"]');
+    if (!r) return;
+    o.disconnect();
+    r.checked = true;
+    r.onchange();
+    r.closest(".card").scrollIntoView({ block: "center" });
+  });
+  o.observe(m, { childList: true });
+})();
