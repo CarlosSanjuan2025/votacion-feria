@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Administrador de estudiantes</title>
+<link rel="stylesheet" href="style.css"></head>
+<body>
+<div id="demo" class="demo" hidden>MODO DEMO: sin Firebase configurado</div>
+<header><h1>Administrador · Estudiantes 🔒</h1><p id="i"></p></header>
+<main>
+<div id="login" class="row">
+<p>Ingresa el PIN de administrador</p>
+<input type="password" id="pin" autocomplete="off" style="width:100%;padding:12px;border-radius:10px;border:1px solid #2f4673;background:#0b1424;color:#eef3fb;font-size:1rem">
+<p id="err" class="sub" style="color:#ff8a8a"></p>
+<button id="go">Entrar</button>
+</div>
+<div id="panel" hidden>
+<p id="tot" class="sub"></p>
+<p id="tabs" class="sub"></p>
+<div id="lista"></div>
+<p id="msg" class="sub"></p>
+<p style="text-align:center"><button id="rst" style="background:#ff6b6b">Reiniciar votos de estudiantes</button> <button id="out" style="background:#9fb0cc">Salir</button></p>
+</div>
+</main>
+<script src="config.js"></script><script src="common.js"></script>
+<script>
+document.getElementById("i").textContent = C.TITULO;
+if (DEMO) document.getElementById("demo").hidden = false;
+const $ = id => document.getElementById(id);
+let timer = null;
+function kReset(pin) { return BASE + "/reset/" + encodeURIComponent(pin) + ".json"; }
+async function probarPin(pin) {
+if (DEMO) return true;
+try { const r = await fetch(kReset(pin), { method: "PUT", body: "false" }); return r.ok; } catch (e) { return false; }
+}
+async function leerEst() {
+const c = {}; C.PROYECTOS.forEach(p => c[p.id] = 0);
+const tabs = {};
+let data;
+if (DEMO) data = JSON.parse(localStorage.getItem("votos_est_demo") || "{}");
+else { const r = await fetch(BASE + "/votos_est.json", { cache: "no-store" }); if (!r.ok) throw new Error("HTTP " + r.status); data = (await r.json()) || {}; }
+Object.values(data).forEach(v => { if (v && c[v.p] !== undefined) { c[v.p]++; const k = v.tab || "?"; tabs[k] = (tabs[k] || 0) + 1; } });
+return { c: c, tabs: tabs };
+}
+async function pintar() {
+try {
+const res = await leerEst(); const c = res.c;
+const total = Object.values(c).reduce((a, b) => a + b, 0);
+const max = Math.max(...Object.values(c));
+$("tot").textContent = "Total de votos de estudiantes: " + total + " · se actualiza cada 5 s";
+const ks = Object.keys(res.tabs).sort();
+$("tabs").textContent = ks.length ? "Por tablet: " + ks.map(k => "Tablet " + k + " = " + res.tabs[k]).join(" · ") : "Por tablet: sin votos todavía";
+const lista = [...C.PROYECTOS].sort((a, b) => c[b.id] - c[a.id]);
+$("lista").innerHTML = "";
+lista.forEach(p => {
+const top = max > 0 && c[p.id] === max;
+const pct = total ? Math.round(c[p.id] * 100 / total) : 0;
+const d = document.createElement("div");
+d.className = "row" + (top ? " top" : "");
+d.innerHTML = '<div class="h"><span class="n"><span class="ft"></span><span class="tx"></span></span><span class="big"></span></div><div class="sub"></div><div class="track"><div class="fill"></div></div>';
+d.querySelector(".tx").textContent = (top ? "👑 " : "") + p.nombre;
+d.querySelector(".ft").replaceWith(crearFoto(p, "th"));
+d.querySelector(".big").textContent = c[p.id];
+d.querySelector(".sub").textContent = pct + "% de los votos";
+$("lista").appendChild(d);
+requestAnimationFrame(() => d.querySelector(".fill").style.width = (max ? c[p.id] * 100 / max : 0) + "%");
+});
+} catch (e) { $("tot").textContent = "Error leyendo votos: " + e.message; }
+}
+function mostrarPanel() { $("login").hidden = true; $("panel").hidden = false; pintar(); timer = setInterval(pintar, 5000); }
+async function entrar() {
+const pin = $("pin").value.trim();
+if (!pin) return;
+$("err").textContent = "Verificando…";
+if (await probarPin(pin)) { sessionStorage.setItem("pin", pin); $("err").textContent = ""; mostrarPanel(); }
+else { $("err").textContent = "PIN incorrecto o administrador sin configurar."; }
+}
+async function reiniciar() {
+if (!confirm("¿Seguro? Se borrarán TODOS los votos de estudiantes (los de docentes no se tocan).")) return;
+const pin = sessionStorage.getItem("pin") || "";
+$("msg").textContent = "Reiniciando…";
+if (DEMO) { localStorage.removeItem("votos_est_demo"); $("msg").textContent = "Votos de estudiantes reiniciados."; pintar(); return; }
+try {
+let r = await fetch(kReset(pin), { method: "PUT", body: "true" });
+if (!r.ok) throw new Error("PIN no válido");
+r = await fetch(BASE + "/votos_est.json", { method: "DELETE" });
+if (!r.ok) throw new Error("No se pudieron borrar los votos (" + r.status + ")");
+$("msg").textContent = "Votos de estudiantes reiniciados.";
+} catch (e) {
+$("msg").textContent = "Error: " + e.message;
+} finally {
+try { await fetch(kReset(pin), { method: "PUT", body: "false" }); } catch (e) {}
+}
+pintar();
+}
+$("go").onclick = entrar;
+$("pin").onkeydown = e => { if (e.key === "Enter") entrar(); };
+$("rst").onclick = reiniciar;
+$("out").onclick = () => { sessionStorage.removeItem("pin"); clearInterval(timer); $("panel").hidden = true; $("login").hidden = false; $("pin").value = ""; };
+if (sessionStorage.getItem("pin")) mostrarPanel();
+</script></body></html>
