@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QR de los stands</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;padding:16px;background:#fff;color:#000}
+h1{text-align:center;font-size:20px;margin:0 0 4px}
+.bar{text-align:center;margin:8px 0 16px}
+button{font-size:16px;padding:8px 16px}
+#g{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.s{border:2px dashed #888;padding:12px;text-align:center;break-inside:avoid}
+.n{font-size:26px;font-weight:bold}
+.q{display:flex;justify-content:center;margin:8px 0}
+.t{font-size:15px;font-weight:bold}
+.x{font-size:13px;margin-top:6px}
+@media print{.bar{display:none}}
+</style></head>
+<body>
+<h1 id="t"></h1>
+<div class="bar"><button onclick="print()">Imprimir QR de los stands</button></div>
+<div id="g"></div>
+<script src="config.js"></script>
+<script>
+document.getElementById("t").textContent = window.CONFIG.TITULO;
+const base = location.href.replace(/stands\.html.*$/, "index.html");
+const g = document.getElementById("g");
+window.CONFIG.PROYECTOS.forEach(p => {
+const d = document.createElement("div");
+d.className = "s";
+d.innerHTML = '<div class="n"></div><div class="q"></div><div class="t"></div><div class="x">Escanea y vota por este proyecto</div>';
+d.querySelector(".n").textContent = "Proyecto " + p.id;
+d.querySelector(".t").textContent = p.nombre;
+new QRCode(d.querySelector(".q"), { text: base + "?p=" + p.id, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+g.appendChild(d);
+});
+</script></body></html>
