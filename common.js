@@ -87,7 +87,7 @@ async function rondaOk() {
 
 (function () {
   var p = new URLSearchParams(location.search).get("p");
-  if (!/^[1-7]$/.test(p || "")) return;
+  if (!/^[1-8]$/.test(p || "")) return;
   var m = document.getElementById("m");
   if (!m) return;
   var o = new MutationObserver(function () {
