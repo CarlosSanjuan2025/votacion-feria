@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Votación de estudiantes</title>
+<link rel="stylesheet" href="style.css">
+<style>
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+#ov[hidden]{display:none}
+#bx{background:#14213a;border:1px solid #2f4673;border-radius:16px;padding:20px;max-width:420px;text-align:center;color:#eef3fb}
+#bx button{margin:8px 6px}
+.ft2{text-align:center;font-size:.8rem;color:#9fb0cc;padding:8px 0 90px}
+</style></head>
+<body>
+<div id="demo" class="demo" hidden>MODO DEMO: configura Firebase en config.js</div>
+<header><h1 id="t"></h1><p id="i"></p><p>Elige <b>un</b> proyecto y pulsa “Votar”</p></header>
+<main id="m"></main>
+<div class="ft2" id="ft"></div>
+<div class="bar" id="bar"><button id="b" disabled>Votar</button></div>
+<div id="ov" hidden><div id="bx"></div></div>
+<script src="config.js"></script><script src="common.js"></script>
+<script>
+document.getElementById("t").textContent = C.TITULO;
+document.getElementById("i").textContent = C.INSTITUCION;
+if (DEMO) document.getElementById("demo").hidden = false;
+const $ = id => document.getElementById(id);
+const tab = (new URLSearchParams(location.search).get("t") || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 8) || "0";
+let sel = null, busy = false;
+function contador() { const n = Number(localStorage.getItem("est_n_" + tab) || 0); $("ft").textContent = "Tablet " + tab + " · votos en esta tablet: " + n; }
+function pintar() {
+const m = $("m"); m.innerHTML = ""; sel = null; $("b").disabled = true; $("b").textContent = "Votar";
+C.PROYECTOS.forEach(p => {
+const l = document.createElement("label");
+l.className = "card";
+l.innerHTML = '<input type="radio" name="p" value="' + p.id + '"><div><b></b><span></span></div>';
+const f = crearFoto(p, "ph");
+f.onclick = e => { if (f.tagName === "IMG") { e.preventDefault(); ampliar(p.foto); } };
+l.insertBefore(f, l.children[1]);
+l.querySelector("b").textContent = p.nombre;
+l.querySelector("input").onchange = () => {
+sel = p.id; $("b").disabled = false;
+document.querySelectorAll(".card").forEach(c => c.classList.remove("sel"));
+l.classList.add("sel");
+};
+m.appendChild(l);
+});
+window.scrollTo(0, 0);
+}
+function caja(html) { $("bx").innerHTML = html; $("ov").hidden = false; }
+function cerrar() { $("ov").hidden = true; }
+async function enviar() {
+if (busy) return; busy = true;
+caja("<p>Enviando…</p>");
+const id = "t" + tab + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+try {
+if (DEMO) { const v = JSON.parse(localStorage.getItem("votos_est_demo") || "{}"); v[id] = { p: sel, t: Date.now(), tab: tab }; localStorage.setItem("votos_est_demo", JSON.stringify(v)); }
+else {
+const r = await fetch(BASE + "/votos_est/" + id + ".json", { method: "PUT", body: JSON.stringify({ p: sel, t: Date.now(), tab: tab }) });
+if (!r.ok) throw new Error(r.status);
+}
+localStorage.setItem("est_n_" + tab, String(Number(localStorage.getItem("est_n_" + tab) || 0) + 1));
+caja("<h2>¡Gracias por votar! 🎉</h2><p>Tu voto quedó registrado.</p>");
+setTimeout(() => { cerrar(); pintar(); contador(); busy = false; }, 3000);
+} catch (e) {
+caja('<p>No se pudo enviar. Revisa el internet e intenta otra vez.</p><button id="ok">Entendido</button>');
+$("ok").onclick = () => { cerrar(); busy = false; };
+}
+}
+$("b").onclick = () => {
+if (!sel) return;
+const p = C.PROYECTOS.find(x => x.id === sel);
+caja('<h2>¿Confirmas tu voto?</h2><p></p><button id="si">Sí, votar</button><button id="no" style="background:#9fb0cc">Cambiar</button>');
+$("bx").querySelector("p").textContent = p.id + ". " + p.nombre;
+$("si").onclick = enviar;
+$("no").onclick = cerrar;
+};
+pintar(); contador();
+</script></body></html>
